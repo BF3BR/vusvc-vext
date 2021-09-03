@@ -1,0 +1,9 @@
+{
+	"Name": "VuSvc",
+	"Authors": ["kiwidog"],
+	"Description": "VU Online Service",
+	"URL": "none",
+	"Version": "1.0.0",
+	"HasWebUI": false,
+	"HasVeniceEXT": true
+}
