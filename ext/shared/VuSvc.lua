@@ -24,7 +24,7 @@ VuSvcApis = {
         Error = "/Error",
         Remove = "/Remove",
         Create = "/Create"
-    }
+    },
 
     -- Match api
     Match = "/api/Match",
@@ -40,7 +40,7 @@ VuSvcApis = {
         Leave = "/Leave",
         GetStatus = "/Status",
         Update = "/Update"
-    }
+    },
 
     -- Stats api
     Stats = "/api/Stats"
@@ -66,6 +66,52 @@ end
 function VuSvc:Server_GetReturnLobby()
 end
 
+function VuSvc:MakeRequest(p_Api, p_Cmd, p_Request)
+    -- Make sure we have a valid api
+    if p_Api == nil then
+        return nil
+    end
+
+    -- Make sure we have a valid cmd
+    if p_Cmd == nil then
+        return nil
+    end
+
+    -- If there is no request specified then create a empty table
+    if p_Request == nil then
+        p_Request = { }
+    end
+    
+    -- Encode the table
+    local s_EncodedData = json.encode(p_Request)
+    if s_EncodedData == nil then
+        print("err: could not encode data.")
+        return nil
+    end
+
+    -- Send a sync request to the backend
+    local s_Response = Net:PostHTTP(self:CreateUrl(p_Api, p_Cmd), s_EncodedData, self.m_Options)
+    if s_Response == nil then
+        print("err: could not get response.")
+        return nil
+    end
+
+    -- Make sure that we get a success status
+    if s_Response.status ~= 200 then
+        print("err: response status returned " .. s_Response.status)
+        return nil
+    end
+
+    -- Decode the response data
+    local s_ResponseTable = json.decode(s_Response.body)
+    if s_ResponseTable == nil then
+        print("err: could not decode json response.")
+        return nil
+    end
+
+    return s_ResponseTable
+end
+
 --[[
     CreatePlayer
 
@@ -87,31 +133,17 @@ function VuSvc:CreatePlayer(p_ZeusId, p_PlayerName)
         ["Name"] = p_PlayerName
     }
 
-    -- Get the CreatePlayerData
-    local s_CreatePlayerData = json.encode(s_CreatePlayerRequest)
-
-    -- Post to the backend
-    local s_Response = Net:PostHTTP(self:CreateUrl(VuSvcApis.Player, VuSvcApis.PlayerCmds.CreatePlayer), s_CreatePlayerData, self.m_Options)
-    if s_Response == nil then
-        print("err: could not get response.")
-        return nil
-    end
-
-    -- Validate that the response returned successfully
-    if s_Response.status ~= 200 then
-        print("err: response status returned " .. s_Response.status)
-        return nil
-    end
-
-    -- Decode the player data
-    local s_PlayerData = json.decode(s_Response.body)
+    -- Get the player data
+    local s_PlayerData = self:MakeRequest(VuSvcApis.Player, VuSvcApis.PlayerCmds.Create, s_CreatePlayerRequest)
     if s_PlayerData == nil then
-        print("err: could not decode json player info.")
+        print("err: could not get player data.")
         return nil
     end
+
+    print(s_PlayerData)
 
     -- Get the player id
-    local s_PlayerBackendId = s_PlayerData["id"]
+    local s_PlayerBackendId = s_PlayerData["playerId"]
     if s_PlayerBackendId == nil then
         print("err: player data id missing.")
         return nil
@@ -146,8 +178,30 @@ function VuSvc:CreateLobby(p_PlayerId, p_LobbyName, p_MaxPlayers)
     end
 
     local s_CreateLobbyRequest = {
-        ["id"]
+        ["playerId"] = p_PlayerId,
+        ["name"] = p_LobbyName,
+        ["maxPlayers"] = p_MaxPlayers
     }
+
+    local s_LobbyData = self:MakeRequest(VuSvcApis.Lobby, VuSvcApis.LobbyCmds.Create, s_CreateLobbyRequest)
+    if s_LobbyData == nil then
+        print("err: could not get lobby data.")
+        return nil
+    end
+
+    local s_LobbyId = s_LobbyData["lobbyId"]
+    if s_LobbyId == nil then
+        print("err: could not decode lobby id")
+        return nil
+    end
+
+    local s_LobbyCode = s_LobbyData["code"]
+    if s_LobbyCode == nil then
+        print("err: could not decode lobby code")
+        return nil
+    end
+
+    return s_LobbyId, s_LobbyCode
 end
 
 --[[
