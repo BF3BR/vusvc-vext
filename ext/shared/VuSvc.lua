@@ -113,6 +113,12 @@ function VuSvc:MakeRequest(p_Api, p_Cmd, p_Request)
 end
 
 --[[
+    =========================================================
+    Player APIs
+    =========================================================
+]]--
+
+--[[
     CreatePlayer
 
     This will create a new player on the backend, or if the player exists will return
@@ -140,7 +146,8 @@ function VuSvc:CreatePlayer(p_ZeusId, p_PlayerName)
         return nil
     end
 
-    print(s_PlayerData)
+    -- DEBUG: Uncomment below
+    --print(s_PlayerData)
 
     -- Get the player id
     local s_PlayerBackendId = s_PlayerData["playerId"]
@@ -160,6 +167,57 @@ function VuSvc:CreatePlayer(p_ZeusId, p_PlayerName)
 
     return s_PlayerBackendId, s_PlayerBackendName
 end
+
+--[[
+    GetPlayerInfo
+    Guid p_SvcId - Player id from the backend
+
+    Returns:
+    Table or nil on error
+]]
+function VuSvc:GetPlayerInfo(p_SvcId)
+    -- Send a sync request to the backend
+    local s_Response = Net:GetHTTP(self:CreateUrl(VuSvcApis.Player, VuSvcApis.PlayerCmds.Info) .. "/" .. p_SvcId, self.m_Options)
+    if s_Response == nil then
+        print("err: could not get response.")
+        return nil
+    end
+
+    -- Make sure that we get a success status
+    if s_Response.status ~= 200 then
+        print("err: response status returned " .. s_Response.status)
+        return nil
+    end
+
+    -- Decode the response data
+    local s_ResponseTable = json.decode(s_Response.body)
+    if s_ResponseTable == nil then
+        print("err: could not decode json player info response.")
+        return nil
+    end
+
+    return s_ResponseTable
+end
+
+--[[
+    GetPlayers
+    Gets all players currently active on the server
+    NOTE: This is admin/debug functionality only
+
+    Returns:
+    SafePlayerInfo[] or nil on error
+]]--
+function VuSvc:GetPlayers()
+    -- This is debug/admin only functionality
+    return nil
+end
+
+--[[
+    =========================================================
+    Lobby APIs
+    =========================================================
+]]--
+
 
 --[[
     CreateLobby
