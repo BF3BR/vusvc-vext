@@ -56,16 +56,6 @@ function VuSvc:__init()
     self.m_Options.verifyCertificate = SvcConfig.Should_VerifyCertificate
 end
 
-
-function VuSvc:Server_UpdateStatus()
-end
-
-function VuSvc:Server_GetSquads()
-end
-
-function VuSvc:Server_GetReturnLobby()
-end
-
 function VuSvc:MakeRequest(p_Api, p_Cmd, p_Request)
     -- Make sure we have a valid api
     if p_Api == nil then
@@ -100,6 +90,12 @@ function VuSvc:MakeRequest(p_Api, p_Cmd, p_Request)
     if s_Response.status ~= 200 then
         print("err: response status returned " .. s_Response.status)
         return nil
+    end
+
+    -- Check to see if we got any response data
+    if s_Response.body == "" then
+        -- If not we return an empty array
+        return { }
     end
 
     -- Decode the response data
@@ -263,6 +259,103 @@ function VuSvc:CreateLobby(p_PlayerId, p_LobbyName, p_MaxPlayers)
 end
 
 --[[
+    RemoveLobby
+    Removes a lobby, if the player is the admin
+
+    Returns:
+    bool - True on success, false otherwise
+]]--
+function VuSvc:RemoveLobby(p_PlayerId, p_LobbyId)
+    if p_PlayerId == nil then
+        print("err: invalid player id.")
+        return false
+    end
+
+    local s_RemoveLobbyRequest = {
+        ["playerId"] = p_PlayerId,
+        ["lobbyId"] = p_LobbyId
+    }
+
+    local s_RemoveLobbyResponse = self:MakeRequest(VuSvcApis.Lobby, VuSvcApis.LobbyCmds.Remove, s_RemoveLobbyRequest)
+    if s_RemoveLobbyResponse == nil then
+        print("err: could not get remove lobby response.")
+        return false
+    end
+
+    return true
+end
+
+--[[
+    JoinLobby
+    With a lobby id and code, tell the backend player to join
+
+    Returns:
+    True on success, false otherwise
+]]
+function VuSvc:JoinLobby(p_PlayerId, p_LobbyId, p_LobbyCode)
+    if p_PlayerId == nil then
+        print("err: invalid player id.")
+        return false
+    end
+
+    if p_LobbyId == nil then
+        print("err: invalid lobby id.")
+        return false
+    end
+
+    if #p_Code ~= SvcConfig.LobbyCodeMaxLength then
+        print("err: invalid lobby code.")
+        return false
+    end
+
+    local s_JoinLobbyRequest = {
+        ["playerId"] = p_PlayerId,
+        ["lobbyId"] = p_LobbyId,
+        ["lobbyCode"] = p_LobbyCode 
+    }
+
+    local s_JoinLobbyResponse = self:MakeRequest(VuSvcApis.Lobby, VuSvcApis.LobbyCmds.Join, s_JoinLobbyRequest)
+    if s_JoinLobbyResponse == nil then
+        print("err: could not get join lobby response.")
+        return false
+    end
+
+    return true
+end
+
+--[[
+    LeaveLobby
+    Makes a player leave a lobby
+
+    Returns:
+    bool - True on success, false otherwise
+]]--
+function VuSvc:LeaveLobby(p_PlayerId, p_LobbyId)
+    if p_PlayerId == nil then
+        print("err: invalid player id.")
+        return false
+    end
+
+    if p_LobbyId == nil then
+        print("err: invalid lobby id.")
+        return false
+    end
+
+    local s_LeaveLobbyRequest = {
+        ["playerId"] = p_PlayerId,
+        ["lobbyId"] = p_LobbyId
+    }
+
+    local s_LeaveLobbyResponse = self:MakeRequest(VuSvcApis.Lobby, VuSvcApis.LobbyCmds.Leave, s_LeaveLobbyRequest)
+    if s_LeaveLobbyResponse == nil then
+        print("err: could not get leave lobby response.")
+        return false
+    end
+
+    return true
+end
+
+--[[
     GetLobbyStatus
     p_LobbyId - Guid - The guid of the lobby
     p_Code - String - The lobby code that is given on creation
@@ -332,6 +425,48 @@ function VuSvc:GetLobbyStatus(p_LobbyId, p_LobbyCode)
     return s_LobbyId, s_MaxPlayerCount, s_PlayerNamesArray
 end
 
+--[[
+    UpdateLobby
+    Updates the current lobby status so the server doesn't expire it
+
+    Guid p_PlayerId - The player id
+    Guid p_LobbyId - The lobby id
+
+    Returns:
+    bool - True on success, false otherwise
+]]--
+function VuSvc:UpdateLobby(p_PlayerId, p_LobbyId)
+    if p_PlayerId == nil then
+        print("err: invalid player id.")
+        return false
+    end
+
+    if p_LobbyId == nil then
+        print("err: invalid lobby id.")
+        return false
+    end
+
+    local s_UpdateLobbyRequest = {
+        ["lobbyId"] = p_LobbyId,
+        ["playerId"] = p_PlayerId
+    }
+
+    local s_UpdateLobbyResponse = self:MakeRequest(VuSvcApis.Lobby, vuSvcApis.LobbyCmds.Update, s_UpdateLobbyRequest)
+    if s_UpdateLobbyResponse == nil then
+        print("err: could not get update lobby response.")
+        return false
+    end
+
+    return true
+end
+
+--[[
+    CreateUrl
+    Helper function that will take an VuSvcApi and Cmd and create a url
+
+    Returns:
+    String - formed URL
+]]--
 function VuSvc:CreateUrl(p_Api, p_Cmd)
     return self.m_Host .. p_Api .. p_Cmd
 end

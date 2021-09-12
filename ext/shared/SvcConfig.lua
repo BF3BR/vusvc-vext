@@ -9,4 +9,7 @@ SvcConfig = {
 
     -- Length of the lobby code, this needs to match the backend
     BackendLobbyCodeLength = 4,
+
+    -- Max lobby code length (default: 4)
+    LobbyCodeMaxLength = 4,
 }
