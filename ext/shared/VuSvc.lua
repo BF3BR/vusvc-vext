@@ -29,6 +29,17 @@ VuSvcApis = {
     -- Match api
     Match = "/api/Match",
 
+    MatchCmds = {
+        Queue = "/Queue",
+        Dequeue = "/Dequeue",
+        GetMatchById = "/GetMatchById",
+        GetMatchByPlayerId = "/GetMatchByPlayerId",
+        GetMatchConnectionInfo = "/GetMatchConnectionInfo",
+        GetMatchInfo = "/GetMatchInfo",
+        SetMatchState = "/SetMatchState",
+        SetMatchCompleted = "/SetMatchCompleted"
+    },
+
     -- Lobby api
     Lobby = "/api/Lobby",
 
@@ -451,7 +462,7 @@ function VuSvc:UpdateLobby(p_PlayerId, p_LobbyId)
         ["playerId"] = p_PlayerId
     }
 
-    local s_UpdateLobbyResponse = self:MakeRequest(VuSvcApis.Lobby, vuSvcApis.LobbyCmds.Update, s_UpdateLobbyRequest)
+    local s_UpdateLobbyResponse = self:MakeRequest(VuSvcApis.Lobby, VuSvcApis.LobbyCmds.Update, s_UpdateLobbyRequest)
     if s_UpdateLobbyResponse == nil then
         print("err: could not get update lobby response.")
         return false
@@ -469,6 +480,74 @@ end
 ]]--
 function VuSvc:CreateUrl(p_Api, p_Cmd)
     return self.m_Host .. p_Api .. p_Cmd
+end
+
+--[[
+    =========================================================
+    Match APIs
+    =========================================================
+]]--
+
+function VuSvc:QueueLobby(p_PlayerId, p_LobbyId)
+    if p_PlayerId == nil then
+        print("err: invalid player id.")
+        return false
+    end
+
+    if p_LobbyId == nil then
+        print("err: invalid lobby id.")
+        return false
+    end
+
+    local s_QueueLobbyRequest = {
+        ["lobbyId"] = p_LobbyId,
+        ["playerId"] = p_PlayerId
+    }
+
+    local s_QueueLobbyResponse = self:MakeRequest(VuSvcApis.Match, VuSvcApis.MatchCmds.Queue, s_QueueLobbyRequest)
+    if s_QueueLobbyResponse == nil then
+        print("err: could not get queue lobby response.")
+        return false
+    end
+
+    -- Verify the response status
+    if s_QueueLobbyResponse.status ~= 200 then 
+        print("err: incorrect response status (" .. s_QueueLobbyResponse.status .. ")")
+        return nil
+    end
+
+    return true
+end
+
+function VuSvc:DequeueLobby(p_PlayerId, p_LobbyId)
+    if p_PlayerId == nil then
+        print("err: invalid player id.")
+        return false
+    end
+
+    if p_LobbyId == nil then
+        print("err: invalid lobby id.")
+        return false
+    end
+
+    local s_DeQueueLobbyRequest = {
+        ["lobbyId"] = p_LobbyId,
+        ["playerId"] = p_PlayerId
+    }
+
+    local s_DeQueueLobbyResponse = self:MakeRequest(VuSvcApis.Match, VuSvcApis.MatchCmds.Dequeue, s_DeQueueLobbyRequest)
+    if s_DeQueueLobbyResponse == nil then
+        print("err: could not get queue lobby response.")
+        return false
+    end
+
+    -- Verify the response status
+    if s_DeQueueLobbyResponse.status ~= 200 then 
+        print("err: incorrect response status (" .. s_DeQueueLobbyResponse.status .. ")")
+        return nil
+    end
+
+    return true
 end
 
 return VuSvc
